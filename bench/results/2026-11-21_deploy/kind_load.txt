@@ -1,0 +1,3 @@
+Image: "rag-golden-serve:7346611" with ID "sha256:1466011f6355b0a235d876f127bd58dc9b92176567baf6415796ae59fef4dca6" not yet present on node "rag-control-plane", loading...
+kind load exit=0
+docker.io/library/rag-golden-serve              7346611              95f1828b935ed       92.7MB

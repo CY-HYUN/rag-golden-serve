@@ -1,0 +1,9 @@
+2026-11-21T16:16:17Z
+curl: (7) Failed to connect to localhost port 8080 after 0 ms: Couldn't connect to server
+{"status":"ok","chunks":5354,"version":"7346611"}
+{"answer":"The optimizer used to train the model is LD3 [50].","abstained":false,"prompt_version":"v1","sources":[{"chunk_id":"2607.03551#16","paper_id":"2607.03551"},{"chunk_id":"2607.02763#13","paper_id":"2607.02763"},{"chunk_id":"2607.03011#26","paper_id":"2607.03011"},{"chunk_id":"2607.05855#10","paper_id":"2607.05855"},{"chunk_id":"2607.06609#6","paper_id":"2607.06609"}],"retrieve_seconds":0.004212418999941292,"generate_seconds":28.23653802400031}
+
+real	0m29.058s
+user	0m0.020s
+sys	0m0.025s
+exit=0

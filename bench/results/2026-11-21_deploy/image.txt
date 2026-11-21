@@ -1,0 +1,4 @@
+rag-golden-serve:d7b5925 373MB
+rag-golden-serve:7346611 373MB
+torch in image: False
+size bytes 372734106

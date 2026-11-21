@@ -1,0 +1,3 @@
+NAME                         READY   STATUS    RESTARTS   AGE     IP           NODE                NOMINATED NODE   READINESS GATES
+rag-7db8d895f7-trtrt         1/1     Running   0          2m38s   10.244.0.5   rag-control-plane   <none>           <none>
+rag-model-6f7d5f9867-wd5st   1/1     Running   0          2m38s   10.244.0.6   rag-control-plane   <none>           <none>

@@ -1,0 +1,14 @@
+2026-11-21T16:13:35Z
+Release "rag" does not exist. Installing it now.
+NAME: rag
+LAST DEPLOYED: Sat Nov 21 17:13:37 2026
+NAMESPACE: rag
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: image 7346611
+TEST SUITE: None
+
+real	2m40.852s
+user	0m0.512s
+sys	0m0.459s
+exit=0

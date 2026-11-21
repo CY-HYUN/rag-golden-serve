@@ -1,0 +1,8 @@
+2026-11-21T16:18:23Z
+kubernetes_namespace_v1.rag: Destroying... [id=...]
+kubernetes_namespace_v1.rag: Destruction complete after 13s
+Destroy complete! Resources: 1 destroyed.
+kind_cluster.this: Destroying... [id=...]
+kind_cluster.this: Destruction complete after 4s
+Destroy complete! Resources: 1 destroyed.
+exit=0
