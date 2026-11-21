@@ -37,6 +37,10 @@ PROMPTS = {
            f"given. First decide whether the passages contain the answer. If they do not, reply with exactly {ABSTAIN} "
            "and nothing else. If they do, answer in one to three sentences using only the passages."),
 }
+# Langfuse prompt management holds both texts under one name; scripts/langfuse_prompts.py creates them and fails when
+# a label resolves to another version or text. The generate span carries the pair, so each answer links to its prompt.
+LANGFUSE_PROMPT_NAME = "rag-golden-serve-answer"
+LANGFUSE_PROMPT_VERSIONS = {"v1": 1, "v2": 2}
 PROMPT_VERSION = os.environ.get("PROMPT_VERSION", "v1")
 if PROMPT_VERSION not in PROMPTS:  # a bad setting stops the start-up instead of failing every request later
     raise RuntimeError(f"PROMPT_VERSION={PROMPT_VERSION!r}, expected one of {sorted(PROMPTS)}")
@@ -133,6 +137,9 @@ def ask(req: AskRequest) -> AskResponse:
         with tracer.start_as_current_span("generate") as span:
             span.set_attribute("gen_ai.request.model", LLM_MODEL)
             span.set_attribute("rag.prompt_version", version)
+            span.set_attribute("langfuse.observation.type", "generation")  # Langfuse links prompts to generations only
+            span.set_attribute("langfuse.observation.prompt.name", LANGFUSE_PROMPT_NAME)
+            span.set_attribute("langfuse.observation.prompt.version", LANGFUSE_PROMPT_VERSIONS[version])
             span.set_attribute("input.value", req.question)
             try:
                 answer = generate(req.question, ids, PROMPTS[version])

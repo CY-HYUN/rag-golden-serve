@@ -64,6 +64,14 @@ they do not, reply with exactly NOT_IN_CONTEXT"). Both versions are kept in Lang
 (`rag-golden-serve-answer`, version 1 labelled production, version 2), written there from the service's own `PROMPTS`
 by `scripts/langfuse_prompts.py`.
 
+Each answer is linked to the prompt version that produced it. The `generate` span carries
+`langfuse.observation.type=generation`, `langfuse.observation.prompt.name` and `langfuse.observation.prompt.version`
+(the attributes Langfuse's OpenTelemetry mapping reads for a prompt link), and `scripts/langfuse_prompts.py` exits 1
+when a Langfuse label points at another version or text than the service sends. Checked on 2026-11-21 at 21:02 UTC
+through the stack with the Langfuse collector: one v1 and one v2 question came back in Langfuse's observations API as
+generations with prompt `rag-golden-serve-answer` version 1 and version 2. The 100 generate observations read from
+17:00 to 19:00 UTC, sent before the change, had no prompt link (the query stopped at its limit of 100).
+
 `scripts/prompt_compare.py` asked all 140 golden questions with each version through `/ask` (temperature 0, fixed
 seed, the two versions alternating question by question, 16:38 to 19:18 UTC). The two measures and their names are
 rag-golden-eval's: an abstention is a reply that starts with `NOT_IN_CONTEXT` (`rge/harness.py:74`).

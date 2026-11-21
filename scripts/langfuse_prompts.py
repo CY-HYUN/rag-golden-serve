@@ -17,10 +17,10 @@ import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from rag_golden_serve.app import PROMPTS
+from rag_golden_serve.app import LANGFUSE_PROMPT_NAME as NAME
+from rag_golden_serve.app import LANGFUSE_PROMPT_VERSIONS, PROMPTS
 
 ROOT = Path(__file__).resolve().parent.parent
-NAME = "rag-golden-serve-answer"
 
 
 def settings() -> dict:
@@ -66,12 +66,19 @@ def main() -> None:
     s, listing = call(env, "GET", f"/api/public/v2/prompts?name={urllib.parse.quote(NAME)}")
     for item in listing.get("data", []):
         print("prompt", item.get("name"), "versions", item.get("versions"), "labels", item.get("labels"))
+    mismatch = []
     for version, text in PROMPTS.items():
         s, b = call(env, "GET", f"/api/public/v2/prompts/{urllib.parse.quote(NAME)}?label={version}")
-        print(f"label {version}: HTTP {s}, version {b.get('version')}, same text as the service: {b.get('prompt') == text}")
+        same = b.get("prompt") == text and b.get("version") == LANGFUSE_PROMPT_VERSIONS[version]
+        print(f"label {version}: HTTP {s}, version {b.get('version')} (the span sends {LANGFUSE_PROMPT_VERSIONS[version]}), "
+              f"same text as the service: {b.get('prompt') == text}")
+        if not same:
+            mismatch.append(version)
+    if mismatch:  # the span would link answers to the wrong prompt
+        sys.exit(f"Langfuse and app.LANGFUSE_PROMPT_VERSIONS disagree for {mismatch}")
     if a.traces:  # /api/public/traces was removed on 2026-11-16; observations v2 is its replacement (API answer, 2026-11-21)
         since = (datetime.now(UTC) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        s, b = call(env, "GET", f"/api/public/v2/observations?fields=core,basic&fromStartTime={since}&limit=50")
+        s, b = call(env, "GET", f"/api/public/v2/observations?fields=core,basic,prompt&fromStartTime={since}&limit=50")
         rows = b.get("data", [])
         print(f"observations in the last hour: HTTP {s}, rows {len(rows)} {b.get('error', '')[:200]}")
         traces = {}
@@ -80,6 +87,9 @@ def main() -> None:
         print("traces among them:", len(traces))
         for tid, obs in list(traces.items())[:2]:
             print(" ", tid, sorted((o.get("name"), o.get("type")) for o in obs))
+        for o in rows:  # the prompt link the generate span asks for (empty on spans sent before 2026-11-21 21:00Z)
+            if o.get("name") == "generate":
+                print("  generate", o.get("startTime"), "prompt", o.get("promptName") or "-", "version", o.get("promptVersion"))
 
 
 if __name__ == "__main__":

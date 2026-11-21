@@ -2,6 +2,9 @@
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from rge.harness import ABSTAIN
 
 from rag_golden_serve import app as service
@@ -60,6 +63,21 @@ def test_prompt_version_reaches_the_model(api, model):
     api.post("/ask", json=QUESTION | {"prompt_version": "v2"})
     assert service.PROMPTS["v2"] in seen[0].read().decode()  # the whole text: v1 and v2 share their first words
     assert api.post("/ask", json=QUESTION | {"prompt_version": "v3"}).status_code == 422
+
+
+@pytest.mark.parametrize("version", ["v1", "v2"])
+def test_generate_span_links_the_langfuse_prompt(api, model, monkeypatch, version):
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    monkeypatch.setattr(service, "tracer", provider.get_tracer("test"))
+    model(lambda request: completion("x"))
+    api.post("/ask", json=QUESTION | {"prompt_version": version})
+    attrs = next(s for s in exporter.get_finished_spans() if s.name == "generate").attributes
+    assert attrs["langfuse.observation.type"] == "generation"
+    assert attrs["langfuse.observation.prompt.name"] == "rag-golden-serve-answer"
+    assert attrs["langfuse.observation.prompt.version"] == {"v1": 1, "v2": 2}[version]
+    assert set(service.LANGFUSE_PROMPT_VERSIONS) == set(service.PROMPTS)
 
 
 def raise_connect_error(request):
