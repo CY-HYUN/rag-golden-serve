@@ -8,7 +8,7 @@ Every stage ends with one measured line and the command that reproduces it. A st
 
 ## Status
 
-**Stage 1 is measured** (2026-11-21). The code of stages 2 and 3 is in the repository (service, observability
+**Stages 1 and 3b are measured** (2026-11-21). The code of stages 2, 3a and 3c is in the repository (service, observability
 stack, chart, Terraform, CI); a stage gets its row filled only when its number has been measured. Stage 0
 (environment) is recorded in [docs/stage0-environment.md](docs/stage0-environment.md).
 
@@ -17,7 +17,7 @@ stack, chart, Terraform, CI); a stage gets its row filled only when its number h
 | 1. serving | an open model behind vLLM on a Colab T4: time to first token and output tokens/s at concurrency 1 to 32, three repeats | Qwen2.5-0.5B-Instruct, 512 tokens in and 128 out: 143 output tokens/s at 1 concurrent request, 1,280 at 32; TTFT p95 64 ms and 991 ms; throughput within 1% over three repeats ([details](docs/stage1-serving.md)) | `bench/colab_vllm_t4.ipynb`, then `bench/extract_results.py` and `bench/summarize.py` |
 | 2. observability | Prometheus, Grafana and OpenTelemetry on the service: latency per stage, and an alert seen both silent and firing | - | - |
 | 3a. Kubernetes and Helm | a local cluster (kind): one rollout of a new version and one rollback | - | - |
-| 3b. CI | the retrieval check on every pull request: a pull request with broken retrieval is blocked before merge | - | - |
+| 3b. CI | the retrieval check on every pull request: a pull request with broken retrieval is blocked before merge | a pull request that kept one chunk per paper passed the unit tests and the cluster install, dropped recall@5 from 91/119 to 48/119 (0.765 to 0.403) and was refused by the required check; a second pull request passed and was merged ([details](docs/stage3b-ci.md)) | `uv run pytest -q -s tests/test_retrieval_gate.py`; the two pull requests |
 | 3c. Terraform | cluster and namespace created and destroyed from code | - | - |
 
 ![Stage 1: output tokens per second and time to first token against concurrency](bench/results/2026-11-21_colab-t4/figure.png)

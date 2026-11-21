@@ -1,0 +1,6 @@
+retrieval gate: recall@5 = 48/119 = 0.4034 (baseline 91/119)
+        print(f"retrieval gate: recall@5 = {hits}/{ANSWERABLE} = {recall:.4f} (baseline {BASELINE_HITS}/{ANSWERABLE})")
+E       AssertionError: recall@5 fell to 48/119 = 0.4034
+tests/test_retrieval_gate.py:22: AssertionError
+FAILED tests/test_retrieval_gate.py::test_recall_at_5_does_not_fall - AssertionError: recall@5 fell to 48/119 = 0.4034
+1 failed in 2.66s
