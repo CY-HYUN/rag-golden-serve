@@ -71,8 +71,14 @@ class AskResponse(BaseModel):
 
 
 def retrieve(question: str, k: int = TOP_K_GEN) -> list[int]:
-    """Chunk indexes, best first. The one retrieval path: /ask and the retrieval gate both call this."""
-    return rge_retrieve.bm25(question, k)
+    """Chunk indexes, best first, at most one per paper, so the sources of an answer come from k different papers.
+    The one retrieval path: /ask and the retrieval gate both call this."""
+    cs, papers, ids = chunks(), set(), []
+    for i in rge_retrieve.bm25(question, 50):
+        if cs[i]["paper_id"] not in papers:
+            papers.add(cs[i]["paper_id"])
+            ids.append(i)
+    return ids[:k]
 
 
 def generate(question: str, ids: list[int], system: str) -> str:
