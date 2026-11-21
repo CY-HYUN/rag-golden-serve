@@ -43,7 +43,9 @@ requests (958 to 1,048 ms), so a difference under about 10% there is inside the 
 - **Client against server.** The benchmark's mean TTFT over all 3,136 requests (warm-up included) is 279 ms; the
   server's own `vllm:time_to_first_token_seconds` counters give 266 ms over the same 3,136 requests. The client sees
   13 ms more, which is the HTTP path the server does not count.
-- **No prefix-cache help.** Each run uses its own seed, so no prompt is sent twice.
+- **No sign of prefix-cache help.** vLLM's prefix cache is on by default, so each run uses its own seed to keep
+  prompts from repeating across runs. TTFT p50 at concurrency 1 did not fall from the first repeat to the third
+  (58.5, 59.7, 59.0 ms), which repeated prompts would have caused. The prompts themselves were not saved.
 
 ## Limits
 
