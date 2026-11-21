@@ -1,0 +1,11 @@
+name, memory.total [MiB], driver_version
+Tesla T4, 15360 MiB, 580.82.07
+Python 3.13.16
+transformers 5.22.1
+vllm 0.34.0
+vllm:time_to_first_token_seconds_count{engine="0",model_name="Qwen/Qwen2.5-0.5B-Instruct"} 3136.0
+vllm:time_to_first_token_seconds_sum{engine="0",model_name="Qwen/Qwen2.5-0.5B-Instruct"} 834.2088704109192
+2
+model name	: Intel(R) Xeon(R) CPU @ 2.00GHz
+Mem: 12 4 1 0 7 8
+torch 2.14.0

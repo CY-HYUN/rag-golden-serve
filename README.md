@@ -8,16 +8,18 @@ Every stage ends with one measured line and the command that reproduces it. A st
 
 ## Status
 
-**Nothing is measured yet.** Stage 0 (environment) is done and recorded in
-[docs/stage0-environment.md](docs/stage0-environment.md); the table fills as stages finish.
+**Stage 1 is measured** (2026-11-21); stages 2 and 3 are not started. Stage 0 (environment) is recorded in
+[docs/stage0-environment.md](docs/stage0-environment.md).
 
 | stage | what it shows | result | reproduce |
 |---|---|---|---|
-| 1. serving | an open model behind vLLM on a Colab T4: time to first token and output tokens/s at concurrency 1 to 32, three repeats | - | - |
+| 1. serving | an open model behind vLLM on a Colab T4: time to first token and output tokens/s at concurrency 1 to 32, three repeats | Qwen2.5-0.5B-Instruct, 512 tokens in and 128 out: 143 output tokens/s at 1 concurrent request, 1,280 at 32; TTFT p95 64 ms and 991 ms; throughput within 1% over three repeats ([details](docs/stage1-serving.md)) | `bench/colab_vllm_t4.ipynb`, then `bench/extract_results.py` and `bench/summarize.py` |
 | 2. observability | Prometheus, Grafana and OpenTelemetry on the service: latency per stage, and an alert seen both silent and firing | - | - |
 | 3a. Kubernetes and Helm | a local cluster (kind): one rollout of a new version and one rollback | - | - |
 | 3b. CI | the retrieval check on every pull request: a pull request with broken retrieval is blocked before merge | - | - |
 | 3c. Terraform | cluster and namespace created and destroyed from code | - | - |
+
+![Stage 1: output tokens per second and time to first token against concurrency](bench/results/2026-11-21_colab-t4/figure.png)
 
 ## Design in short
 
@@ -39,11 +41,11 @@ The full reasoning, the options that were rejected and the stop line of each sta
 ```
 src/rag_golden_serve/   the service (stage 2)
 tests/                  unit tests with a fake model, and the retrieval gate
-bench/                  stage 1: the Colab notebook and its result files
+bench/                  stage 1: the Colab notebook, its result files, the table and figure scripts
 observability/          Prometheus, alert rules, Grafana, OpenTelemetry Collector
 deploy/helm/            the chart
 deploy/terraform/       cluster and namespace
-docs/                   design and the environment record
+docs/                   design, the environment record, one page per finished stage
 ```
 
 Paths are relative to the repository root or come from environment variables. `.env.example` lists the variables;

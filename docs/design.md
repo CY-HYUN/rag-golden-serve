@@ -74,5 +74,6 @@ polishing is not a reason to stay.
 - Settled in stage 0 (2026-11-21): vLLM's CPU image did not become a server on this laptop within the trial, so the
   local stack uses llama.cpp's server (same API). What exactly "limited features" on AVX2 leaves out is still not
   known; it no longer matters here.
-- Whether a free Colab session gets a T4 every time, and whether vLLM needs `--dtype half` there. The measurement
-  script writes one result file per concurrency level so a cut session can resume.
+- Settled in stage 1 (2026-11-21): the one free Colab session that was asked for gave a T4, and the server ran
+  with `--dtype half`. Whether every session gets a T4, and whether vLLM starts there without that flag, were not
+  tested.
