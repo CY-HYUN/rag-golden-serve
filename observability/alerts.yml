@@ -1,0 +1,17 @@
+# One alert: more than 5% of /ask requests ended in a 5xx over the last minute, and it stayed that way for a minute.
+# With no traffic the ratio has no value, so the alert stays inactive (checked in alerts_test.yml).
+# Limit: a 1-minute rate needs two samples of a moving counter inside the minute. If requests complete less often
+# than about once a minute (for example every call waiting out a 120-second timeout on a hung model server), the
+# ratio keeps losing its value and the alert falls back to inactive before `for` is reached. A model server that
+# refuses connections, as in the drill, fails fast and is caught.
+groups:
+  - name: rag-golden-serve
+    rules:
+      - alert: AskErrorRatioHigh
+        expr: |
+          sum(rate(rag_requests_total{status=~"5.."}[1m])) / sum(rate(rag_requests_total[1m])) > 0.05
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: "More than 5% of /ask requests returned a 5xx during the last minute"

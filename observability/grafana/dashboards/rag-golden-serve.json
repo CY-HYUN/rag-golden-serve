@@ -1,0 +1,170 @@
+{
+  "uid": "rag-golden-serve",
+  "title": "rag-golden-serve",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "refresh": "5s",
+  "timezone": "browser",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "/ask requests per minute that passed validation, by HTTP status",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (status) (rate(rag_requests_total[1m])) * 60",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "min": 0, "custom": { "lineWidth": 2, "fillOpacity": 0, "showPoints": "never" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "200" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#2a78d6" } }] },
+          { "matcher": { "id": "byName", "options": "502" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#d1344b" } }] },
+          { "matcher": { "id": "byName", "options": "500" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#8a3ffc" } }] }
+        ]
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Share of /ask requests that ended in a 5xx (1-minute window); the alert line is 5%",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(sum(rate(rag_requests_total{status=~\"5..\"}[1m])) or vector(0)) / sum(rate(rag_requests_total[1m]))",
+          "legendFormat": "5xx share"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "color": { "mode": "fixed", "fixedColor": "#d1344b" },
+          "custom": { "lineWidth": 2, "fillOpacity": 0, "showPoints": "never", "thresholdsStyle": { "mode": "line" } },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "transparent", "value": null }, { "color": "#d1344b", "value": 0.05 }] }
+        },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "id": 3,
+      "type": "state-timeline",
+      "title": "Alert AskErrorRatioHigh: inactive, pending (condition true, waiting 1 minute), firing",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ALERTS{alertname=\"AskErrorRatioHigh\", alertstate=\"firing\"}) * 2 or max(ALERTS{alertname=\"AskErrorRatioHigh\", alertstate=\"pending\"}) or 0 * max(up{job=\"app\"})",
+          "legendFormat": "AskErrorRatioHigh"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 80, "lineWidth": 0 },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "inactive", "color": "#3f9c5a", "index": 0 },
+                "1": { "text": "pending", "color": "#e0a100", "index": 1 },
+                "2": { "text": "firing", "color": "#d1344b", "index": 2 }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": { "mergeValues": true, "showValue": "auto", "rowHeight": 0.8, "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Seconds per pipeline stage, p95 over 5 minutes (log scale; generate counts answered calls only)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le, stage) (rate(rag_stage_seconds_bucket[5m])))",
+          "legendFormat": "{{stage}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 0, "showPoints": "never", "scaleDistribution": { "type": "log", "log": 10 } } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "retrieve" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#2a78d6" } }] },
+          { "matcher": { "id": "byName", "options": "generate" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#eb6834" } }] }
+        ]
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Seconds per pipeline stage, p50 over 5 minutes (log scale; generate counts answered calls only)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.5, sum by (le, stage) (rate(rag_stage_seconds_bucket[5m])))",
+          "legendFormat": "{{stage}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2, "fillOpacity": 0, "showPoints": "never", "scaleDistribution": { "type": "log", "log": 10 } } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "retrieve" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#2a78d6" } }] },
+          { "matcher": { "id": "byName", "options": "generate" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#eb6834" } }] }
+        ]
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Model server: tokens per second while it is working (prompt reading, answer writing)",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 21 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(llamacpp:prompt_tokens_total[5m]) / rate(llamacpp:prompt_seconds_total[5m])",
+          "legendFormat": "prompt tokens/s"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(llamacpp:tokens_predicted_total[5m]) / rate(llamacpp:tokens_predicted_seconds_total[5m])",
+          "legendFormat": "answer tokens/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "min": 0, "custom": { "lineWidth": 2, "fillOpacity": 0, "showPoints": "never" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "prompt tokens/s" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#2a78d6" } }] },
+          { "matcher": { "id": "byName", "options": "answer tokens/s" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#eb6834" } }] }
+        ]
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["lastNotNull"] }, "tooltip": { "mode": "multi" } }
+    }
+  ]
+}

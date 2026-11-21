@@ -1,0 +1,103 @@
+# On every pull request and every push to main. The three jobs are required checks on main, so a pull request
+# whose retrieval got worse cannot be merged. Actions are pinned to commit hashes (GitHub's hardening guide).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint-unit:
+    name: lint-unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          version: "0.11.16"
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - name: Lint
+        run: uv run --frozen ruff check .
+      - name: Unit tests (fake model server, no network)
+        run: uv run --frozen pytest -q --deselect tests/test_retrieval_gate.py
+      - name: Alert rule unit tests (promtool)
+        run: >
+          docker run --rm -v "$PWD/observability:/w" -w /w --entrypoint promtool
+          prom/prometheus:v3.16.0 test rules alerts_test.yml
+
+  retrieval-gate:
+    name: retrieval-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          version: "0.11.16"
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - name: recall@5 on the 119 answerable golden questions, through the function /ask calls
+        run: uv run --frozen pytest -q -s tests/test_retrieval_gate.py
+
+  kind-install:
+    name: kind-install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      IMAGE: rag-golden-serve:ci-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - name: Build the service image
+        run: docker build --provenance=false --build-arg GIT_SHA=${{ github.sha }} -t "$IMAGE" .
+      - name: The image holds no torch
+        run: docker run --rm "$IMAGE" python -c "import importlib.util as u, sys; sys.exit(u.find_spec('torch') is not None)"
+      - uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
+        with:
+          version: v0.33.0
+          cluster_name: rag
+          node_image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        with:
+          version: v4.3.1   # the runner image ships Helm 3; the chart is run with Helm 4 locally
+      - name: Lint the chart
+        run: helm lint --strict deploy/helm/rag-golden-serve --set-string image.tag=ci
+      - name: Load the image into the cluster
+        run: kind load docker-image "$IMAGE" --name rag
+      - name: Install the chart with the stub model server
+        run: >
+          helm upgrade --install rag deploy/helm/rag-golden-serve -n rag --create-namespace
+          -f deploy/helm/values-ci.yaml
+          --set-string image.tag=ci-${{ github.sha }} --set-string model.image="$IMAGE"
+          --wait --timeout 5m
+      - name: One /ask through the cluster
+        run: |
+          kubectl -n rag port-forward svc/rag 8000:80 >/tmp/port-forward.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS localhost:8000/healthz && break; sleep 2; done
+          echo
+          curl -fsS localhost:8000/ask -H 'Content-Type: application/json' \
+            -d '{"question":"Which optimizer was used to train the model?"}' | tee /tmp/ask.json
+          grep -q '"answer":"This is the stub model server."' /tmp/ask.json
+          grep -q '"chunk_id"' /tmp/ask.json
+      - name: Cluster state on failure
+        if: failure()
+        run: |
+          kubectl -n rag get pods -o wide
+          kubectl -n rag describe pods | tail -60
+          kubectl -n rag logs deploy/rag --tail=100 || true
+          cat /tmp/port-forward.log || true

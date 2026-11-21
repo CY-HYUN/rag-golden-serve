@@ -8,8 +8,9 @@ Every stage ends with one measured line and the command that reproduces it. A st
 
 ## Status
 
-**Stage 1 is measured** (2026-11-21); stages 2 and 3 are not started. Stage 0 (environment) is recorded in
-[docs/stage0-environment.md](docs/stage0-environment.md).
+**Stage 1 is measured** (2026-11-21). The code of stages 2 and 3 is in the repository (service, observability
+stack, chart, Terraform, CI); a stage gets its row filled only when its number has been measured. Stage 0
+(environment) is recorded in [docs/stage0-environment.md](docs/stage0-environment.md).
 
 | stage | what it shows | result | reproduce |
 |---|---|---|---|
@@ -39,12 +40,15 @@ The full reasoning, the options that were rejected and the stop line of each sta
 ## Layout
 
 ```
-src/rag_golden_serve/   the service (stage 2)
-tests/                  unit tests with a fake model, and the retrieval gate
-bench/                  stage 1: the Colab notebook, its result files, the table and figure scripts
-observability/          Prometheus, alert rules, Grafana, OpenTelemetry Collector
-deploy/helm/            the chart
-deploy/terraform/       cluster and namespace
+src/rag_golden_serve/   the service: /ask, /healthz, /metrics
+vendor/rag-golden-eval/ the evaluation repository, a git submodule at a pinned commit (clone with --recurse-submodules)
+tests/                  unit tests with a fake model, the retrieval gate, the stub model server CI deploys
+bench/                  stage 1 (Colab notebook, table and figure scripts) and the result files of every stage
+observability/          Prometheus, the alert rule and its unit tests, Grafana, OpenTelemetry Collector
+compose.yaml            the local stack: service, CPU model server, Prometheus, Grafana, collector
+scripts/                the alert drill, the prompt comparison, the local deploy
+deploy/helm/            the chart, and the values CI uses
+deploy/terraform/       cluster and namespace, two roots applied one after the other
 docs/                   design, the environment record, one page per finished stage
 ```
 

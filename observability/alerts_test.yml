@@ -1,0 +1,79 @@
+# Unit tests for the alert rule, run by promtool (no server needed):
+#   docker run --rm -v "$PWD/observability:/w" -w /w --entrypoint promtool prom/prometheus:v3.16.0 test rules alerts_test.yml
+rule_files:
+  - alerts.yml
+evaluation_interval: 5s
+
+tests:
+  # Healthy traffic: one 200 every 5 seconds for 10 minutes, no 5xx series at all. The alert never appears.
+  - interval: 5s
+    input_series:
+      - series: 'rag_requests_total{status="200"}'
+        values: '0+1x120'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: AskErrorRatioHigh
+        exp_alerts: []
+
+  # No traffic: the counters exist and do not move. The ratio is 0/0, which is not above 5%.
+  - interval: 5s
+    input_series:
+      - series: 'rag_requests_total{status="200"}'
+        values: '7+0x120'
+      - series: 'rag_requests_total{status="502"}'
+        values: '0+0x120'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: AskErrorRatioHigh
+        exp_alerts: []
+
+  # The model server dies at minute 5: 200s stop, every request becomes a 502.
+  # Pending right after, firing once the condition has held for a minute.
+  - interval: 5s
+    input_series:
+      - series: 'rag_requests_total{status="200"}'
+        values: '0+1x60 60+0x60'
+      - series: 'rag_requests_total{status="502"}'
+        values: '0+0x60 0+1x60'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: AskErrorRatioHigh
+        exp_alerts: []
+      - eval_time: 5m30s
+        alertname: AskErrorRatioHigh
+        exp_alerts: []   # above 5% already, but not for a minute yet: pending, not firing
+      - eval_time: 6m30s
+        alertname: AskErrorRatioHigh
+        exp_alerts:
+          - exp_labels:
+              severity: page
+            exp_annotations:
+              summary: "More than 5% of /ask requests returned a 5xx during the last minute"
+
+  # A steady 1% of failures (1 in 100 at every scrape) stays under the 5% line for the whole 10 minutes.
+  - interval: 5s
+    input_series:
+      - series: 'rag_requests_total{status="200"}'
+        values: '0+99x120'
+      - series: 'rag_requests_total{status="502"}'
+        values: '0+1x120'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: AskErrorRatioHigh
+        exp_alerts: []
+
+  # A steady 10% is over the line: firing once it has lasted a minute.
+  - interval: 5s
+    input_series:
+      - series: 'rag_requests_total{status="200"}'
+        values: '0+9x120'
+      - series: 'rag_requests_total{status="502"}'
+        values: '0+1x120'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: AskErrorRatioHigh
+        exp_alerts:
+          - exp_labels:
+              severity: page
+            exp_annotations:
+              summary: "More than 5% of /ask requests returned a 5xx during the last minute"

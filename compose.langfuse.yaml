@@ -1,0 +1,12 @@
+# Adds Langfuse Cloud as a second destination for the spans. Needs .env (see scripts/langfuse_env.sh):
+#   docker compose -f compose.yaml -f compose.langfuse.yaml up -d
+services:
+  otel-collector:
+    command: ["--config", "/etc/otelcol/config.yaml", "--config", "/etc/otelcol/langfuse.yaml"]
+    # Compose reads .env for these two. LANGFUSE_AUTH_B64 is both keys in base64: it is a secret, and it shows
+    # in `docker inspect` and `docker compose config`.
+    environment:
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL}
+      LANGFUSE_AUTH_B64: ${LANGFUSE_AUTH_B64}
+    volumes:
+      - ./observability/otel-collector.langfuse.yaml:/etc/otelcol/langfuse.yaml:ro

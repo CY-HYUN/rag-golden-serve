@@ -1,0 +1,2 @@
+# Shell scripts run inside Linux (WSL, CI) even when the checkout is on Windows.
+*.sh text eol=lf

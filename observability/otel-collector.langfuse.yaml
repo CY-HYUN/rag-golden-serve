@@ -1,0 +1,14 @@
+# Optional second config for the collector: also send the spans to Langfuse Cloud. Passed after the base file,
+# so only what is named here is replaced (compose.langfuse.yaml adds it). LANGFUSE_BASE_URL and LANGFUSE_AUTH_B64
+# come from .env; scripts/langfuse_env.sh writes them without showing the keys.
+exporters:
+  otlp_http/langfuse:
+    endpoint: ${env:LANGFUSE_BASE_URL}/api/public/otel   # the exporter appends /v1/traces
+    headers:
+      Authorization: "Basic ${env:LANGFUSE_AUTH_B64}"
+      x-langfuse-ingestion-version: "4"
+
+service:
+  pipelines:
+    traces:
+      exporters: [debug, otlp_http/langfuse]

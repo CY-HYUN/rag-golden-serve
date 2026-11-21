@@ -1,0 +1,3 @@
+[submodule "vendor/rag-golden-eval"]
+	path = vendor/rag-golden-eval
+	url = https://github.com/CY-HYUN/rag-golden-eval.git

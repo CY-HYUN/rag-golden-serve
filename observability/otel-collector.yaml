@@ -1,0 +1,21 @@
+# Receives the service's spans over OTLP/HTTP and prints every span (docker compose logs otel-collector).
+# From collector v0.110 servers bind to localhost by default, so the endpoint is set for use inside a container.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]

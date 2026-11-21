@@ -1,0 +1,15 @@
+# Scrapes the service and the model server every 5 seconds and evaluates the alert rule at the same pace.
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+rule_files:
+  - alerts.yml
+
+scrape_configs:
+  - job_name: app
+    static_configs:
+      - targets: ["app:8000"]
+  - job_name: model
+    static_configs:
+      - targets: ["model:8080"]

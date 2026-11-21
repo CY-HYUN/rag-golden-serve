@@ -1,0 +1,6 @@
+apiVersion: v2
+name: rag-golden-serve
+description: The /ask service and, unless model.enabled is false, the model server it calls
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

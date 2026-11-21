@@ -1,0 +1,9 @@
+# Everything is excluded, then the few paths the Dockerfile copies are let back in.
+*
+!pyproject.toml
+!uv.lock
+!src
+!tests/fake_model.py
+!vendor/rag-golden-eval/rge
+!vendor/rag-golden-eval/data/corpus.jsonl.gz
+**/__pycache__

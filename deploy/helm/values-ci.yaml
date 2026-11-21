@@ -1,0 +1,13 @@
+# CI: the model server is the stub in tests/fake_model.py, run from the service image itself.
+# It speaks the same /v1/chat/completions API, so the install and one /ask call need no model download.
+model:
+  image: ""          # set on the command line to the service image: --set-string model.image=rag-golden-serve:<sha>
+  command: ["python", "/app/tests/fake_model.py"]
+  args: []
+  startupSeconds: 60
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

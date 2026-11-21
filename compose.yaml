@@ -1,0 +1,53 @@
+# The local stack of stage 2: the service, a CPU model server with the same API as the vLLM server of stage 1,
+# and the observability tools. Image versions are pinned; the model server has no version tags, so it is pinned by digest.
+#
+#   docker compose up -d --build        # then: curl localhost:8000/healthz
+# Ports are published on 127.0.0.1 only: nothing here has a login.
+services:
+  model:
+    image: ghcr.io/ggml-org/llama.cpp@sha256:5b43086e3ba7ea5794d72904654f6cd41224a9b1c6ac0398f4940ee380d30f23
+    # the image already listens on 0.0.0.0:8080
+    command: ["--hf-repo", "Qwen/Qwen2.5-0.5B-Instruct-GGUF", "--hf-file", "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+              "--ctx-size", "4096", "--metrics"]
+    environment:
+      LLAMA_CACHE: /models   # the downloaded model file survives a restart in the volume below
+    volumes:
+      - models:/models
+    ports:
+      - "127.0.0.1:8001:8080"
+
+  app:
+    build: .
+    environment:
+      LLM_BASE_URL: http://model:8080/v1
+      OTEL_SERVICE_NAME: rag-golden-serve
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.165.0
+    volumes:
+      - ./observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"      # a local stack: read-only access without a login
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  models:

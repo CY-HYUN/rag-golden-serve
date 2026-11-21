@@ -1,0 +1,60 @@
+{{- if .Values.model.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-model
+  labels:
+    {{- include "rag-golden-serve.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "rag-golden-serve.selector" (dict "root" . "component" "model") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "rag-golden-serve.selector" (dict "root" . "component" "model") | nindent 8 }}
+    spec:
+      containers:
+        - name: model
+          image: {{ .Values.model.image | quote }}
+          imagePullPolicy: {{ .Values.model.pullPolicy }}
+          {{- with .Values.model.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.model.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.model.port }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.model.healthPath }}
+              port: http
+            periodSeconds: 5
+            failureThreshold: {{ div .Values.model.startupSeconds 5 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.model.healthPath }}
+              port: http
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.model.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-model
+  labels:
+    {{- include "rag-golden-serve.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "rag-golden-serve.selector" (dict "root" . "component" "model") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.model.port }}
+      targetPort: http
+{{- end }}

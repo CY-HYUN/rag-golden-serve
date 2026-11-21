@@ -1,0 +1,46 @@
+# The service image. The tag is the git commit it was built from and has no default:
+#   --set-string image.tag=$(git rev-parse --short HEAD)
+image:
+  repository: rag-golden-serve
+  tag: ""
+  pullPolicy: IfNotPresent   # the image is loaded into the kind node, never pulled
+
+promptVersion: v1
+
+llm:
+  baseUrl: ""                # empty: the model Service of this release
+  model: qwen2.5-0.5b-instruct
+  timeoutSeconds: 120
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# The model server. Set enabled to false and llm.baseUrl to a server that already exists to skip it.
+# CI swaps in a stub with the same API (deploy/helm/values-ci.yaml), so a runner needs no model download.
+model:
+  enabled: true
+  image: ghcr.io/ggml-org/llama.cpp@sha256:5b43086e3ba7ea5794d72904654f6cd41224a9b1c6ac0398f4940ee380d30f23
+  pullPolicy: IfNotPresent
+  command: []                # empty: the image's own entrypoint
+  args:
+    - --hf-repo
+    - Qwen/Qwen2.5-0.5B-Instruct-GGUF
+    - --hf-file
+    - qwen2.5-0.5b-instruct-q4_k_m.gguf
+    - --ctx-size
+    - "4096"
+    - --metrics
+  port: 8080
+  healthPath: /health
+  # the model file is downloaded when the pod starts: up to 10 minutes before the pod counts as failed
+  startupSeconds: 600
+  resources:
+    requests:
+      cpu: "1"
+      memory: 1Gi
+    limits:
+      memory: 2Gi

@@ -58,6 +58,10 @@ docs/notes/
 *.tfstate.*
 *.tfvars
 crash.log
+tfplan
+.terraform.tfstate.lock.info
+# written by the kind provider; holds the cluster's client key
+kubeconfig
 
 # uv, ruff, benchmark scratch
 .ruff_cache/
