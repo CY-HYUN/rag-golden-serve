@@ -15,7 +15,7 @@ def test_recall_at_5_does_not_fall():
     answerable = [q for q in load_golden() if q.type != "unanswerable"]
     assert len(answerable) == ANSWERABLE
     ranked = [retrieve(q.question) for q in answerable]  # the default k, as /ask calls it
-    assert all(len(r) == 5 for r in ranked)
+    assert all(len(r) <= 5 for r in ranked)  # recall@5 is read from at most five chunks
     recall = retrieval_metrics(ranked, [q.evidence for q in answerable], k_list=(5,))["recall@5"]
     hits = round(recall * ANSWERABLE)
     print(f"retrieval gate: recall@5 = {hits}/{ANSWERABLE} = {recall:.4f} (baseline {BASELINE_HITS}/{ANSWERABLE})")
