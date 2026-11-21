@@ -1,0 +1,65 @@
+# OS / IDE / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+nul
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Secrets: commit only .env.example
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*-credentials.json
+*-service-account*.json
+*token*
+*secret*
+
+# Build output (Maven)
+target/
+/bin/
+*.class
+*.jar
+*.war
+*.ear
+
+# Runtime artifacts
+logs/
+*.log
+data/local/
+*.tmp
+
+# Personal / working notes
+docs/notes/
+
+# Java IDE
+*.iml
+.settings/
+.project
+.classpath
+
+# Terraform: state holds secrets in plain text and never goes to git
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+
+# uv, ruff, benchmark scratch
+.ruff_cache/
+.cache/
+bench/tmp/
