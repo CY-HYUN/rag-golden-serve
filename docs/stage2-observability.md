@@ -56,6 +56,44 @@ POST /ask   37.596 s   http.status_code 200
 and one while the model server was down: `POST /ask` 0.027 s with status 502 and span status `Error`, `generate`
 0.023 s with the exception recorded.
 
+## Two prompt versions
+
+`/ask` takes a `prompt_version`. v1 is rag-golden-eval's generator prompt, unchanged. v2 changes one thing: the
+abstention rule comes first and is tied to the passages ("First decide whether the passages contain the answer. If
+they do not, reply with exactly NOT_IN_CONTEXT"). Both versions are kept in Langfuse prompt management
+(`rag-golden-serve-answer`, version 1 labelled production, version 2), written there from the service's own `PROMPTS`
+by `scripts/langfuse_prompts.py`.
+
+`scripts/prompt_compare.py` asked all 140 golden questions with each version through `/ask` (temperature 0, fixed
+seed, the two versions alternating question by question, 16:38 to 19:18 UTC). The two measures and their names are
+rag-golden-eval's: an abstention is a reply that starts with `NOT_IN_CONTEXT` (`rge/harness.py:74`).
+
+| prompt | abstention_acc: unanswerable questions declined | false_abstention: answerable questions declined |
+|---|---|---|
+| v1 | 11 of 21 | 25 of 119 |
+| v2 | 18 of 21 | 59 of 119 |
+
+Four calls (v1 three times, plus one in the main run) hit the service's 120-second timeout to the model server
+(`ReadTimeout` in their spans) and were asked again by re-running the same command, which retries failed calls only.
+Why those four took over two minutes was not measured; other jobs were using the laptop's CPU at the time.
+
+Split by retrieval (`scripts/abstention_by_retrieval.py`): 91 of the 119 answerable questions have their gold evidence
+in the top 5 chunks, the same count as the retrieval gate.
+
+| prompt | declined with the evidence in front of the model | declined without the evidence retrieved |
+|---|---|---|
+| v1 | 22 of 91 | 3 of 28 |
+| v2 | 44 of 91 | 15 of 28 |
+
+Reading: v2 declines 7 more of the 21 unanswerable questions and 34 more of the 119 answerable ones. Most of the extra
+refusals (22 of 34) are on questions whose evidence the model had. With this 0.5B model, putting the refusal rule
+first makes it refuse far more often, mostly where it should have answered, so v1 stays the default.
+
+Noise check: v1 again on every fourth question (35 calls) gave the same answer text in 31 and the same abstention
+verdict in 34. The 35 differ although temperature is 0 and the seed fixed: llama.cpp's prompt cache can change results
+between requests (its documentation says so for `cache_prompt`). One flipped verdict in 35 is far below the gaps
+above.
+
 ## What differs from the design
 
 The stop line asked for "100 requests in 10 minutes" of healthy traffic. This CPU answers one request in 30 to 57
@@ -86,6 +124,8 @@ ten minutes and reports the 15.
 - No Alertmanager: the rule's state is read from Prometheus, nobody is notified.
 - The spans are printed by the collector, not stored; there is no trace search.
 - Requests rejected by validation (422) are not counted by the request counter.
+- The prompt comparison counts a string prefix; it does not judge whether the answers that were given are correct.
+  It ran once per version, with one partial repeat of v1.
 
 ## Reproduce
 
