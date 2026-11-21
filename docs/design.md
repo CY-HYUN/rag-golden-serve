@@ -71,7 +71,8 @@ polishing is not a reason to stay.
 
 ## Not known yet
 
-- What vLLM's "limited features" on AVX2 leaves out. Stage 0 settles it with a 30-minute trial; llama.cpp's server
-  is the fallback (same API).
+- Settled in stage 0 (2026-11-21): vLLM's CPU image did not become a server on this laptop within the trial, so the
+  local stack uses llama.cpp's server (same API). What exactly "limited features" on AVX2 leaves out is still not
+  known; it no longer matters here.
 - Whether a free Colab session gets a T4 every time, and whether vLLM needs `--dtype half` there. The measurement
   script writes one result file per concurrency level so a cut session can resume.

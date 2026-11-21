@@ -8,7 +8,8 @@ Every stage ends with one measured line and the command that reproduces it. A st
 
 ## Status
 
-**Nothing is measured yet.** Stage 0 (environment) is in progress; the table fills as stages finish.
+**Nothing is measured yet.** Stage 0 (environment) is done and recorded in
+[docs/stage0-environment.md](docs/stage0-environment.md); the table fills as stages finish.
 
 | stage | what it shows | result | reproduce |
 |---|---|---|---|
