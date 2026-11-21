@@ -52,7 +52,7 @@ out of git.
 |---|---|---|
 | 0. environment | Ubuntu on WSL2 with its disk off the system drive, Docker Engine, kind, kubectl, helm, terraform, one answer from a local CPU model server | the five tool versions recorded in `docs/stage0-environment.md`; free space on the system drive before and after |
 | 1. serving | Qwen2.5-0.5B-Instruct on vLLM, Colab T4; fixed input and output lengths; concurrency 1, 4, 16, 32; p50 and p95 of time to first token and output tokens/s; three repeats in one session | one table, one figure, the spread of the repeats. No tuning, no quantisation comparison |
-| 2. service and observability | `/ask`; request, 5xx and per-stage latency metrics; spans per stage; one Grafana dashboard; one alert (5xx ratio above 5% for 1 minute); two prompt versions compared on abstention over the 21 unanswerable questions and false abstention over the 119 answerable ones, by string match | a dashboard screenshot; two alert records with timestamps (Normal over 10 minutes and 100 requests, Firing after the model server is stopped); the two-ratio table |
+| 2. service and observability | `/ask`; request, 5xx and per-stage latency metrics; spans per stage; one Grafana dashboard; one alert (5xx ratio above 5% for 1 minute); two prompt versions compared on abstention over the 21 unanswerable questions and false abstention over the 119 answerable ones, by string match | a dashboard screenshot; two alert records with timestamps (inactive over 10 minutes of traffic, firing after the model server is stopped); the two-ratio table |
 | 3a. Kubernetes and Helm | image tagged with the commit hash; kind; chart with probes, requests and limits. Readiness checks only the in-process BM25 index, built at start-up | one `helm upgrade`, one `helm rollback`; the image holds no torch; its size |
 | 3b. CI | on every pull request: lint, unit tests with a fake model, the retrieval gate, install on kind inside the runner with a fake model server and one `/ask` call | one pull request with broken retrieval blocked by the required check; one green pull request |
 | 3c. Terraform | cluster and namespace | one `terraform apply`, one `terraform destroy` |
@@ -74,6 +74,9 @@ polishing is not a reason to stay.
 - Settled in stage 0 (2026-11-21): vLLM's CPU image did not become a server on this laptop within the trial, so the
   local stack uses llama.cpp's server (same API). What exactly "limited features" on AVX2 leaves out is still not
   known; it no longer matters here.
+- Settled in stage 2 (2026-11-21): the stop line first said "100 requests" for the ten healthy minutes of the alert
+  drill. That was a guess made before a request was timed: the laptop CPU takes 30 to 57 seconds per answer, so the
+  ten minutes hold 15 requests. The stop line above now says ten minutes of traffic.
 - Settled in stage 1 (2026-11-21): the one free Colab session that was asked for gave a T4, and the server ran
   with `--dtype half`. Whether every session gets a T4, and whether vLLM starts there without that flag, were not
   tested.
